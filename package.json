@@ -1,0 +1,24 @@
+{
+  "name": "engineering-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal AI-powered engineering platform for shared standards, tooling, and review workflows",
+  "scripts": {
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "dev": "turbo run dev",
+    "clean": "turbo run clean",
+    "devx": "node tools/cli/dist/index.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.6.2+sha1.7f417eb782bab712a1a9bd0206887dcee502d03e"
+}

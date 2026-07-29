@@ -1,0 +1,104 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-review:
+    name: DevX AI Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for accurate diffs
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI
+        run: pnpm --filter @devx/cli build
+
+      - name: Run AI Review
+        id: review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          node tools/cli/dist/index.js review \
+            --base ${{ github.event.pull_request.base.ref }} \
+            --output review-report.md
+
+      - name: Post Review Comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body;
+            try {
+              body = fs.readFileSync('review-report.md', 'utf8');
+              if (body.length > 65000) {
+                body = body.substring(0, 65000) + '\n\n... [Report truncated — see artifact for full output]';
+              }
+            } catch {
+              body = '⚠️ AI Review did not produce a report. Check workflow logs.';
+            }
+
+            const header = '<!-- devx-ai-review -->\n## 🤖 DevX AI Review\n\n';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: header + body,
+            });
+
+      - name: Upload Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-review-report
+          path: review-report.md
+          retention-days: 30
+
+      - name: Fail on Must Fix Findings
+        run: |
+          if [ ! -f review-report.md ]; then
+            echo "::error::Review report missing"
+            exit 1
+          fi
+
+          # Extract Must Fix (or legacy Critical Issues) section body
+          SECTION=$(awk '
+            /^## Must Fix/ || /^## Critical Issues/ {flag=1; next}
+            /^## / {flag=0}
+            flag {print}
+          ' review-report.md)
+
+          if echo "$SECTION" | grep -qi 'none found'; then
+            echo "✅ No Must Fix findings"
+            exit 0
+          fi
+
+          ISSUES=$(echo "$SECTION" | grep -E '^\s*[-*] ' | head -10)
+          if [ -n "$ISSUES" ]; then
+            echo "::error::Must Fix findings in AI Review. See PR comment for details."
+            echo "$ISSUES"
+            exit 1
+          fi
+
+          echo "✅ No Must Fix findings"

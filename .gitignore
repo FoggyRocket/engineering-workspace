@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+
+# Reports (generated)
+*-report.md
+review-report.md
+security-report.md
+analytics-report.md
+pr-check-report.md
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+**/secrets/**
+.npmrc
+.netrc
+auth.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs & caches
+*.log
+.turbo/
+.cache/
