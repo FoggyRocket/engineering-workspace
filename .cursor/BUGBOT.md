@@ -19,9 +19,13 @@
 - Framework preferences (e.g. Server Components, next/image, metadata) unless they cause a real bug
 - Speculative refactors or "might be nicer" suggestions without a failure mode
 - Duplicate comments already present on the PR
+- Redundant guard simplifications with no reachable failure mode
+- Requests for behavior already implemented elsewhere in the same diff
+- Assumed null/Option bugs when helpers return sentinel objects (e.g. `{ exists: false }`)
 
 ## Comment quality
-- State the failure mode: what breaks, under what input/state
+- State the failure mode: what breaks, under what input/state — or say "hygiene / no observable change"
 - Cite file and line when possible
-- Suggest a concrete fix
+- Suggest a concrete minimal fix (1–3 lines when possible)
 - Prefer fewer high-confidence findings over many low-confidence nits
+- Before Must Fix: prove reachability and check return types/API, not assumptions

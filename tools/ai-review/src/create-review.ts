@@ -53,7 +53,11 @@ ${comprehensive ? '\n## Security Assessment\n## Test Coverage Assessment\n' : ''
 - Prioritize correctness, security, and concrete runtime failures.
 - Do NOT report formatting, docs-only, or linter-catchable issues as Must Fix.
 - Every Must Fix item must be independently verifiable from the diff.
-- Be specific; reference file paths and line numbers where possible.`;
+- Be specific; reference file paths and line numbers where possible.
+- Pre-flight: observable behavior? types/API allow the case? already covered in this diff? If no/no/yes → Suggestion only.
+- Require reachability (named input) before Must Fix; otherwise Suggestion/hygiene.
+- Inspect return types — do not invent null when helpers return sentinels.
+- Include a minimal suggested patch (1–3 lines) with each finding.`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

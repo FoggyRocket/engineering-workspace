@@ -52,7 +52,14 @@ ${comprehensive ? `## Security Assessment
 - Do NOT report: formatting, indentation, naming taste, missing JSDoc alone, compiler/linter warnings, or documentation-only gaps as Must Fix.
 - Every Must Fix item must be independently verifiable from the diff (clear defect, not speculation).
 - Be honest about severity: if it would not block merge, put it under Standards or Suggestions.
-- Reference file paths and line numbers where possible.`;
+- Reference file paths and line numbers where possible.
+- Pre-flight before escalating: (1) observable behavior change? (2) types/API actually allow the invented case? (3) already handled in the same diff? If no/no/yes → Suggestion only.
+- Require reachability: name a real input where the guard fails, or do not mark Must Fix.
+- Inspect return types/implementations — do not assume null/Option when helpers return sentinel objects (e.g. { exists: false }).
+- Missing cache data ≠ null snapshot; pass snapshots through and let derive*Status helpers decide.
+- If the change does not alter observable behavior, label it hygiene under Suggestions.
+- Do not request features or paths the same PR already implements.
+- For each finding include a minimal suggested patch (1–3 lines when possible), not diagnosis alone.`;
 }
 
 export async function runAiReview({
