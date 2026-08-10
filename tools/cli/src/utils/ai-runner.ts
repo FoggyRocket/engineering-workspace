@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import type { EngineeringRules } from './rules-loader.js';
 
 export type ReviewRules = EngineeringRules | string[];
@@ -85,32 +86,40 @@ ${truncated}
 
 ${buildOutputFormat(comprehensive)}`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env['ANTHROPIC_API_KEY'] ?? '',
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: fullPrompt }],
-    }),
+  return runClaudeCli(fullPrompt);
+}
+
+function runClaudeCli(prompt: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      'claude',
+      ['-p', '--model', 'claude-sonnet-4-6', '--output-format', 'text', '--max-turns', '1'],
+      { stdio: ['pipe', 'pipe', 'pipe'] },
+    );
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+
+    child.on('error', (err) => {
+      reject(new Error(`Failed to spawn claude CLI: ${err.message}`));
+    });
+    child.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`claude CLI exited with code ${code}: ${stderr}`));
+        return;
+      }
+      resolve(stdout.trim());
+    });
+
+    child.stdin.write(prompt);
+    child.stdin.end();
   });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`AI review API error ${response.status}: ${err}`);
-  }
-
-  const data = (await response.json()) as { content: Array<{ type: string; text?: string }> };
-  const text = data.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text ?? '')
-    .join('\n');
-
-  return text;
 }
 
 /** True when Must Fix (or legacy Critical Issues) lists real bullet findings. */
